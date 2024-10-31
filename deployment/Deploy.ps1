@@ -481,16 +481,16 @@ $WebAppNameService=$WebAppNamePrefix+"-asp"
 $WebAppNameAdmin=$WebAppNamePrefix+"-admin"
 $WebAppNamePortal=$WebAppNamePrefix+"-portal"
 #$VnetName=$WebAppNamePrefix+"-vnet"
-#$privateSqlEndpointName=$WebAppNamePrefix+"-db-pe"
-#$privateKvEndpointName=$WebAppNamePrefix+"-kv-pe"
-#$privateSqlDnsZoneName="privatelink.database.windows.net"
-#$privateKvDnsZoneName="privatelink.vaultcore.windows.net"
-#$privateSqlLink =$WebAppNamePrefix+"-db-link"
-#$privateKvlink =$WebAppNamePrefix+"-kv-link"
+$privateSqlEndpointName=$WebAppNamePrefix+"-db-pe"
+$privateKvEndpointName=$WebAppNamePrefix+"-kv-pe"
+$privateSqlDnsZoneName="privatelink.database.windows.net"
+$privateKvDnsZoneName="privatelink.vaultcore.windows.net"
+$privateSqlLink =$WebAppNamePrefix+"-db-link"
+$privateKvlink =$WebAppNamePrefix+"-kv-link"
 #$WebSubnetName="web"
-#$SqlSubnetName="sql"
-#$KvSubnetName="kv"
-$DefaultSubnetName="default"
+$SqlSubnetName="sql"
+$KvSubnetName="kv"
+#$DefaultSubnetName="default"
 
 #keep the space at the end of the string - bug in az cli running on windows powershell truncates last char https://github.com/Azure/azure-cli/issues/10066
 $ADApplicationSecretKeyVault="@Microsoft.KeyVault(VaultName=$KeyVault;SecretName=ADApplicationSecret) "
@@ -503,7 +503,7 @@ Write-host "   🔵 Resource Group"
 Write-host "      ➡️ Create Resource Group"
 az group create --location $Location --name $ResourceGroupForDeployment --output $azCliOutput
 
-Write-host "      ➡️ Create VNET and Subnet"
+Write-host " Commented Section!     ➡️ Create VNET and Subnet"
 #az network vnet create --resource-group $ResourceGroupForDeployment --name $VnetName --address-prefixes "10.0.0.0/20" --output $azCliOutput
 #az network vnet subnet create --resource-group $ResourceGroupForDeployment --vnet-name $VnetName -n $DefaultSubnetName --address-prefixes "10.0.0.0/24" --output $azCliOutput
 #az network vnet subnet create --resource-group $ResourceGroupForDeployment --vnet-name $VnetName -n $WebSubnetName --address-prefixes "10.0.1.0/24" --service-endpoints Microsoft.Sql Microsoft.KeyVault --delegations Microsoft.Web/serverfarms  --output $azCliOutput 
@@ -518,24 +518,23 @@ Write-host "      ➡️ Set minimalTlsVersion to 1.2"
 az sql server update --name $SQLServerName --resource-group $ResourceGroupForDeployment --set minimalTlsVersion="1.2"
 Write-host "      ➡️ Add SQL Server Firewall rules"
 az sql server firewall-rule create --resource-group $ResourceGroupForDeployment --server $SQLServerName -n AllowAzureIP --start-ip-address "0.0.0.0" --end-ip-address "0.0.0.0" --output $azCliOutput
-if ($env:ACC_CLOUD -eq $null) {
+if ($env:ACC_CLOUD -eq $null){
     Write-host "      ➡️ Running in local environment - Add current IP to firewall"
-    $publicIp = (Invoke-WebRequest -uri "https://api.ipify.org").Content
+	$publicIp = (Invoke-WebRequest -uri "https://api.ipify.org").Content
     az sql server firewall-rule create --resource-group $ResourceGroupForDeployment --server $SQLServerName -n AllowIP --start-ip-address "$publicIp" --end-ip-address "$publicIp" --output $azCliOutput
 }
 
-
-Write-host "      ➡️ Create SQL DB"
+Write-host "      ➡️ Create SQL DB: Basic with 5 capacity"
 az sql db create --resource-group $ResourceGroupForDeployment --server $SQLServerName --name $SQLDatabaseName  --edition Basic  --capacity 5 --zone-redundant false --output $azCliOutput
 
 Write-host "   🔵 KeyVault"
 Write-host "      ➡️ Create KeyVault"
-az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --enable-rbac-authorization false --output $azCliOutput
+az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --output $azCliOutput
 Write-host "      ➡️ Add Secrets"
 az keyvault secret set --vault-name $KeyVault --name ADApplicationSecret --value="$ADApplicationSecret" --output $azCliOutput
 az keyvault secret set --vault-name $KeyVault --name DefaultConnection --value $Connection --output $azCliOutput
-Write-host "      ➡️ Update Firewall"
-az keyvault update --name $KeyVault --resource-group $ResourceGroupForDeployment --default-action Allow --output $azCliOutput
+Write-host "   Commented Section!   ➡️ Update Firewall"
+#az keyvault update --name $KeyVault --resource-group $ResourceGroupForDeployment --default-action Deny --output $azCliOutput
 #az keyvault network-rule add --name $KeyVault --resource-group $ResourceGroupForDeployment --vnet-name $VnetName --subnet $WebSubnetName --output $azCliOutput
 
 Write-host "   🔵 App Service Plan"
@@ -589,7 +588,7 @@ az webapp deploy --resource-group $ResourceGroupForDeployment --name $WebAppName
 Write-host "   🔵 Deploy Code to Customer Portal"
 az webapp deploy --resource-group $ResourceGroupForDeployment --name $WebAppNamePortal --src-path "../Publish/CustomerSite.zip" --type zip --output $azCliOutput
 
-Write-host "   🔵 Update Firewall for WebApps and SQL"
+Write-host " Commented section  🔵 Update Firewall for WebApps and SQL"
 #az webapp vnet-integration add --resource-group $ResourceGroupForDeployment --name $WebAppNamePortal --vnet $VnetName --subnet $WebSubnetName --output $azCliOutput
 #az webapp vnet-integration add --resource-group $ResourceGroupForDeployment --name $WebAppNameAdmin --vnet $VnetName --subnet $WebSubnetName --output $azCliOutput
 #az sql server vnet-rule create --name $WebAppNamePrefix-vnet --resource-group $ResourceGroupForDeployment --server $SQLServerName --vnet-name $VnetName --subnet $WebSubnetName --output $azCliOutput
@@ -603,37 +602,37 @@ Remove-Item -Path script.sql
 
 #region Create SQL Private Endpoints
 # Get SQL Server
-#$sqlServerId=az sql server show --name $SQLServerName --resource-group $ResourceGroupForDeployment --query id -o tsv
+$sqlServerId=az sql server show --name $SQLServerName --resource-group $ResourceGroupForDeployment --query id -o tsv
 
 # Create a private endpoint
-#az network private-endpoint create --name $privateSqlEndpointName --resource-group $ResourceGroupForDeployment --vnet-name $vnetName --subnet $SqlSubnetName --private-connection-resource-id $sqlServerId --group-ids sqlServer --connection-name sqlConnection
+az network private-endpoint create --name $privateSqlEndpointName --resource-group $ResourceGroupForDeployment --vnet-name $vnetName --subnet $SqlSubnetName --private-connection-resource-id $sqlServerId --group-ids sqlServer --connection-name sqlConnection
 
 
 # Create a SQL private DNS zone
-#az network private-dns zone create --name $privateSqlDnsZoneName --resource-group $ResourceGroupForDeployment
+az network private-dns zone create --name $privateSqlDnsZoneName --resource-group $ResourceGroupForDeployment
 
 # Link the SQL private DNS zone to the VNet
-#az network private-dns link vnet create --name $privateSqlLink --resource-group $ResourceGroupForDeployment --virtual-network $vnetName --zone-name $privateSqlDnsZoneName --registration-enabled false
+az network private-dns link vnet create --name $privateSqlLink --resource-group $ResourceGroupForDeployment --virtual-network $vnetName --zone-name $privateSqlDnsZoneName --registration-enabled false
 
-#az network private-endpoint dns-zone-group create --resource-group $ResourceGroupForDeployment --endpoint-name $privateSqlEndpointName --name "sql-zone-group"   --private-dns-zone $privateSqlDnsZoneName   --zone-name "sqlserver"
+az network private-endpoint dns-zone-group create --resource-group $ResourceGroupForDeployment --endpoint-name $privateSqlEndpointName --name "sql-zone-group"   --private-dns-zone $privateSqlDnsZoneName   --zone-name "sqlserver"
 #endregion
 
 
 #region Create KV Private Endpoints
 # Get KV Server
-#$keyVaultId=az keyvault show --name $KeyVault --resource-group $ResourceGroupForDeployment --query id -o tsv
+$keyVaultId=az keyvault show --name $KeyVault --resource-group $ResourceGroupForDeployment --query id -o tsv
 
 # Create a KV private endpoint
-#az network private-endpoint create --name $privateKvEndpointName --resource-group $ResourceGroupForDeployment --vnet-name $vnetName --subnet $KvSubnetName --private-connection-resource-id $keyVaultId --group-ids vault  --connection-name kvConnection
+az network private-endpoint create --name $privateKvEndpointName --resource-group $ResourceGroupForDeployment --vnet-name $vnetName --subnet $KvSubnetName --private-connection-resource-id $keyVaultId --group-ids vault  --connection-name kvConnection
 
 
 # Create a KV private DNS zone
-#az network private-dns zone create --name $privateKvDnsZoneName --resource-group $ResourceGroupForDeployment
+az network private-dns zone create --name $privateKvDnsZoneName --resource-group $ResourceGroupForDeployment
 
 # Link the KV private DNS zone to the VNet
-#az network private-dns link vnet create --name $privateKvLink --resource-group $ResourceGroupForDeployment --virtual-network $vnetName --zone-name $privateKvDnsZoneName --registration-enabled false
+az network private-dns link vnet create --name $privateKvLink --resource-group $ResourceGroupForDeployment --virtual-network $vnetName --zone-name $privateKvDnsZoneName --registration-enabled false
 
-#az network private-endpoint dns-zone-group create --resource-group $ResourceGroupForDeployment --endpoint-name $privateKvEndpointName --name "Kv-zone-group"   --private-dns-zone $privateKvDnsZoneName   --zone-name "Kv-zone"
+az network private-endpoint dns-zone-group create --resource-group $ResourceGroupForDeployment --endpoint-name $privateKvEndpointName --name "Kv-zone-group"   --private-dns-zone $privateKvDnsZoneName   --zone-name "Kv-zone"
 #endregion
 
 

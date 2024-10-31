@@ -539,7 +539,7 @@ Write-host "   Commented Section!   ➡️ Update Firewall"
 
 Write-host "   🔵 App Service Plan"
 Write-host "      ➡️ Create App Service Plan"
-az appservice plan create -g $ResourceGroupForDeployment -n $WebAppNameService --sku B1 --output $azCliOutput
+az appservice plan create -g $ResourceGroupForDeployment -n $WebAppNameService --sku D1 --output $azCliOutput
 
 Write-host "   🔵 Admin Portal WebApp"
 Write-host "      ➡️ Create Web App"

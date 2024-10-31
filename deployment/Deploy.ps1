@@ -530,12 +530,20 @@ az sql db create --resource-group $ResourceGroupForDeployment --server $SQLServe
 Write-host "   🔵 KeyVault"
 Write-host "      ➡️ Create KeyVault"
 az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --output $azCliOutput
+
+# Permitir acceso público en Key Vault
+az keyvault update --name $KeyVault --resource-group $ResourceGroupForDeployment --public-network-access Enabled
+
+
+
 Write-host "      ➡️ Add Secrets"
 az keyvault secret set --vault-name $KeyVault --name ADApplicationSecret --value="$ADApplicationSecret" --output $azCliOutput
 az keyvault secret set --vault-name $KeyVault --name DefaultConnection --value $Connection --output $azCliOutput
 Write-host "   Commented Section!   ➡️ Update Firewall"
 #az keyvault update --name $KeyVault --resource-group $ResourceGroupForDeployment --default-action Deny --output $azCliOutput
 #az keyvault network-rule add --name $KeyVault --resource-group $ResourceGroupForDeployment --vnet-name $VnetName --subnet $WebSubnetName --output $azCliOutput
+az keyvault network-rule add --name $KeyVault --resource-group $ResourceGroupForDeployment ---start-ip-address "$publicIp" --end-ip-address "$publicIp"
+
 
 Write-host "   🔵 App Service Plan"
 Write-host "      ➡️ Create App Service Plan"

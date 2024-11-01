@@ -517,11 +517,11 @@ az sql server create --name $SQLServerName --resource-group $ResourceGroupForDep
 Write-host "      ➡️ Set minimalTlsVersion to 1.2"
 az sql server update --name $SQLServerName --resource-group $ResourceGroupForDeployment --set minimalTlsVersion="1.2"
 Write-host "      ➡️ Add SQL Server Firewall rules"
-az sql server firewall-rule create --resource-group $ResourceGroupForDeployment --server $SQLServerName -n AllowAzureIP --start-ip-address "$publicIp" --end-ip-address "$publicIp" --output $azCliOutput
+az sql server firewall-rule create --resource-group $ResourceGroupForDeployment --server $SQLServerName -n AllowAzureIP --start-ip-address 0.0.0.0 --end-ip-address 255.255.255.255 --output $azCliOutput
 if ($env:ACC_CLOUD -eq $null){
     Write-host "      ➡️ Running in local environment - Add current IP to firewall"
 	$publicIp = (Invoke-WebRequest -uri "https://api.ipify.org").Content
-    az sql server firewall-rule create --resource-group $ResourceGroupForDeployment --server $SQLServerName -n AllowIP --start-ip-address "$publicIp" --end-ip-address "$publicIp" --output $azCliOutput
+    az sql server firewall-rule create --resource-group $ResourceGroupForDeployment --server $SQLServerName -n AllowIP --start-ip-address 0.0.0.0 --end-ip-address 255.255.255.255 --output $azCliOutput
 }
 
 Write-host "      ➡️ Create SQL DB: Basic with 5 capacity"

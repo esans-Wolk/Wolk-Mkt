@@ -529,10 +529,7 @@ az sql db create --resource-group $ResourceGroupForDeployment --server $SQLServe
 
 Write-host "   🔵 KeyVault"
 Write-host "      ➡️ Create KeyVault"
-az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --output $azCliOutput
-
-# Permitir acceso público en Key Vault
-az keyvault update --name $KeyVault --resource-group $ResourceGroupForDeployment --public-network-access Enabled
+az keyvault create --name $KeyVault --resource-group $ResourceGroupForDeployment --output $azCliOutput --enable-rbac-authorization false --public-network-access Enabled
 
 
 
